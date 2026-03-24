@@ -42,6 +42,29 @@
 - Actions taken:
   - Built QuickLauncher.exe (9.3 MB)
   - Initial git commit
+  - Multiple fix commits for console window hiding
+
+## Bug Fixes
+| Bug | Fix |
+|-----|-----|
+| launcher.py not found in temp dir | GUI now calls build.py instead |
+| Console window shows | Changed --windowed to --noconsole |
+| dist folder lock error | Use temp dir + shutil.move pattern |
+
+## Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Create launcher | mynotepad -> notepad.exe | Success | Success | ✓ |
+| Conflict detection | Check python command | 4 conflicts | 4 conflicts | ✓ |
+| Launch via exe | Run mynotepad.exe | Notepad opens | Notepad opens | ✓ |
+| Console hiding | Build via GUI | No console | Console hidden | ✓ |
+
+## Error Log
+| Timestamp | Error | Attempt | Resolution |
+|-----------|-------|---------|------------|
+| 2026-03-24 | launcher.py not found | 1 | Use build.py auto-detection |
+| 2026-03-24 | Console window shows | 1 | Changed --windowed to --noconsole |
+| 2026-03-24 | dist folder lock | 1 | Move exe first, then clean |
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |

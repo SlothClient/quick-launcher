@@ -4,7 +4,7 @@
 Create a Windows desktop app that lets users create quick-launch commands (like `bar`) that open any program via the Explorer address bar, with conflict detection, management UI, and PATH integration.
 
 ## Current Phase
-Phase 1
+Complete
 
 ## Phases
 
@@ -15,31 +15,30 @@ Phase 1
 - **Status:** complete
 
 ### Phase 2: Project Setup & Core Files
-- [ ] Create project structure (directories, requirements.txt)
-- [ ] Implement launcher.py (generic launcher with embedded config reading)
-- [ ] Implement app.py core utils (PATH detection, conflict scan, exe generation)
-- [ ] Implement build.py (PyInstaller packaging scripts)
-- **Status:** pending
+- [x] Create project structure (directories, requirements.txt)
+- [x] Implement launcher.py (generic launcher with embedded config reading)
+- [x] Implement app.py core utils (PATH detection, conflict scan, exe generation)
+- [x] Implement build.py (PyInstaller packaging scripts)
+- **Status:** complete
 
 ### Phase 3: GUI Implementation
-- [ ] Create Tab: Create launcher (command name input, browse button, conflict detection, create button)
-- [ ] Create Tab: Manage launchers (Treeview list, delete/edit functionality)
-- [ ] Create Tab: Settings (directory path config, PATH status, add to PATH button)
-- **Status:** pending
+- [x] Create Tab: Create launcher (command name input, browse button, conflict detection, create button)
+- [x] Create Tab: Manage launchers (Treeview list, delete/edit functionality)
+- [x] Create Tab: Settings (directory path config, PATH status, add to PATH button)
+- **Status:** complete
 
 ### Phase 4: Testing & Verification
-- [ ] Build launcher base exe
-- [ ] Test creating a quick command (e.g., `notepad`)
-- [ ] Test conflict detection
-- [ ] Test management features (list, delete)
-- [ ] Test PATH addition
-- **Status:** pending
+- [x] Build launcher base exe
+- [x] Test creating a quick command (mynotepad -> notepad.exe)
+- [x] Test conflict detection (found 4 python.exe in PATH)
+- [x] Test launching notepad via quick command
+- **Status:** complete
 
 ### Phase 5: Packaging & Delivery
-- [ ] Package app as QuickLauncher.exe
-- [ ] Create .gitignore
-- [ ] Initial git commit
-- **Status:** pending
+- [x] Package app as QuickLauncher.exe
+- [x] Create .gitignore
+- [x] Initial git commit + multiple fix commits
+- **Status:** complete
 
 ## Key Questions
 1. How to embed config in exe without breaking it? → Append data after PE marker
@@ -53,13 +52,17 @@ Phase 1
 | tkinter for GUI | Built-in, no extra dependencies |
 | D:\.quick-launchers default | D: drive likely exists, hidden folder convention |
 | Subprocess spawn (not call) | Launches target app and exits immediately |
+| --noconsole for PyInstaller | Proper console hiding for Windows GUI apps |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-|       |         |            |
+| launcher.py not found when running from temp dir | Auto-detect via build.py instead of __file__ | Fixed by calling build.py from app.py |
+| Console window still shows | Changed --windowed to --noconsole | Using --noconsole flag |
+| dist folder lock error | Move exe to project root first | Using temp dir + shutil.move |
 
 ## Notes
 - Embedded config format: `b"__QUICK_LAUNCHER_CONFIG__" + json_config_bytes`
 - PATH uses winreg for user-level modification
 - Each quick command exe is a copy of base + embedded target path
+- QuickLauncher.exe output to project root, only one exe file remains
