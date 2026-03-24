@@ -451,23 +451,30 @@ class QuickLauncherApp:
             self.base_exe_status_var.set("Not found - click 'Build Base Launcher' below")
     
     def build_base_launcher(self):
-        launcher_dir = ensure_launcher_dir()
+        import subprocess
+        import sys
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        launcher_py = os.path.join(script_dir, "launcher.py")
+        build_py = os.path.join(script_dir, "build.py")
         
-        if not os.path.exists(launcher_py):
-            messagebox.showerror("Error", f"launcher.py not found in:\n{script_dir}")
+        if not os.path.exists(build_py):
+            messagebox.showerror("Error", f"build.py not found in:\n{script_dir}")
             return
         
-        base_exe = os.path.join(launcher_dir, BASE_EXE_NAME)
+        messagebox.showinfo("Building", "Building base launcher, please wait...")
         
-        messagebox.showinfo(
-            "Manual Build Required",
-            f"To build the base launcher, run this command:\n\n"
-            f'pyinstaller --onefile --name "_ql_base" --dest "{launcher_dir}" launcher.py\n\n'
-            f"Or run: python build.py launcher"
+        result = subprocess.run(
+            [sys.executable, build_py, "launcher"],
+            cwd=script_dir,
+            capture_output=True,
+            text=True
         )
+        
+        if result.returncode == 0:
+            messagebox.showinfo("Success", "Base launcher built successfully!")
+            self.update_base_exe_status()
+        else:
+            messagebox.showerror("Build Failed", result.stderr or result.stdout)
 
 
 def main():
