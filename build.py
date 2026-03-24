@@ -30,10 +30,6 @@ def ensure_launcher_dir():
         os.makedirs(launcher_dir)
     return launcher_dir
 
-def run_pyinstaller(args):
-    result = subprocess.run([sys.executable, "-m", "PyInstaller"] + args, cwd=SCRIPT_DIR)
-    return result.returncode == 0
-
 def build_launcher():
     print("=" * 50)
     print("Building Base Launcher...")
@@ -49,15 +45,14 @@ def build_launcher():
     
     print(f"Building base launcher to: {launcher_dir}")
     
-    dist_dir = os.path.join(SCRIPT_DIR, "dist")
-    if os.path.exists(dist_dir):
-        shutil.rmtree(dist_dir)
-    
+    temp_dist = os.path.join(SCRIPT_DIR, "dist")
     build_dir = os.path.join(SCRIPT_DIR, "build")
+    spec_file = os.path.join(SCRIPT_DIR, "_ql_base.spec")
+    
+    if os.path.exists(temp_dist):
+        shutil.rmtree(temp_dist)
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
-    
-    spec_file = os.path.join(SCRIPT_DIR, "_ql_base.spec")
     if os.path.exists(spec_file):
         os.remove(spec_file)
     
@@ -65,7 +60,7 @@ def build_launcher():
         sys.executable, "-m", "PyInstaller",
         "--onefile",
         "--name", "_ql_base",
-        "--distpath", launcher_dir,
+        "--distpath", temp_dist,
         "--workpath", build_dir,
         "--specpath", SCRIPT_DIR,
         "launcher.py"
@@ -76,14 +71,18 @@ def build_launcher():
     
     if result.returncode != 0:
         print("Build failed!")
+        shutil.rmtree(temp_dist, ignore_errors=True)
+        shutil.rmtree(build_dir, ignore_errors=True)
         return False
     
+    src_exe = os.path.join(temp_dist, BASE_EXE_NAME)
+    if os.path.exists(src_exe):
+        shutil.move(src_exe, output_exe)
+    
+    shutil.rmtree(temp_dist, ignore_errors=True)
+    shutil.rmtree(build_dir, ignore_errors=True)
     if os.path.exists(spec_file):
         os.remove(spec_file)
-    if os.path.exists(dist_dir):
-        shutil.rmtree(dist_dir)
-    if os.path.exists(build_dir):
-        shutil.rmtree(build_dir)
     
     if os.path.exists(output_exe):
         size = os.path.getsize(output_exe)
@@ -103,24 +102,26 @@ def build_app():
         print(f"Error: app.py not found in {SCRIPT_DIR}")
         return False
     
-    dist_dir = os.path.join(SCRIPT_DIR, "dist")
-    if os.path.exists(dist_dir):
-        shutil.rmtree(dist_dir)
-    
+    output_exe = os.path.join(SCRIPT_DIR, "QuickLauncher.exe")
+    temp_dist = os.path.join(SCRIPT_DIR, "_build_temp")
     build_dir = os.path.join(SCRIPT_DIR, "build")
+    spec_file = os.path.join(SCRIPT_DIR, "QuickLauncher.spec")
+    
+    if os.path.exists(temp_dist):
+        shutil.rmtree(temp_dist)
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
-    
-    spec_file = os.path.join(SCRIPT_DIR, "QuickLauncher.spec")
     if os.path.exists(spec_file):
         os.remove(spec_file)
+    if os.path.exists(output_exe):
+        os.remove(output_exe)
     
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--onefile",
+        "--noconsole",
         "--name", "QuickLauncher",
-        "--windowed",
-        "--distpath", dist_dir,
+        "--distpath", temp_dist,
         "--workpath", build_dir,
         "--specpath", SCRIPT_DIR,
         "app.py"
@@ -131,14 +132,19 @@ def build_app():
     
     if result.returncode != 0:
         print("Build failed!")
+        shutil.rmtree(temp_dist, ignore_errors=True)
+        shutil.rmtree(build_dir, ignore_errors=True)
         return False
     
+    src_exe = os.path.join(temp_dist, "QuickLauncher.exe")
+    if os.path.exists(src_exe):
+        shutil.move(src_exe, output_exe)
+    
+    shutil.rmtree(temp_dist, ignore_errors=True)
+    shutil.rmtree(build_dir, ignore_errors=True)
     if os.path.exists(spec_file):
         os.remove(spec_file)
-    if os.path.exists(build_dir):
-        shutil.rmtree(build_dir)
     
-    output_exe = os.path.join(dist_dir, "QuickLauncher.exe")
     if os.path.exists(output_exe):
         size = os.path.getsize(output_exe)
         print(f"Success! Built QuickLauncher.exe ({size:,} bytes)")
