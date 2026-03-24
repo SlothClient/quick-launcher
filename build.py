@@ -8,11 +8,14 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LAUNCHER_DIR = os.path.join(SCRIPT_DIR)
 BASE_EXE_NAME = "_ql_base.exe"
 APP_EXE_NAME = "QuickLauncher.exe"
+SETTINGS_FILE = "settings.json"
 
 si = subprocess.STARTUPINFO()
 si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 si.wShowWindow = subprocess.SW_HIDE
-SETTINGS_FILE = "settings.json"
+
+env = os.environ.copy()
+env["PYTHONUNBUFFERED"] = "0"
 
 def get_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -67,7 +70,8 @@ def build_launcher():
     ]
     
     print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=SCRIPT_DIR, startupinfo=si, creationflags=subprocess.CREATE_NO_WINDOW)
+    with open(os.devnull, 'w') as devnull:
+        result = subprocess.run(cmd, cwd=SCRIPT_DIR, stdin=devnull, stdout=devnull, stderr=subprocess.STDOUT, startupinfo=si, creationflags=subprocess.CREATE_NO_WINDOW, env=env)
     
     if result.returncode != 0:
         print("Build failed!")
@@ -128,7 +132,8 @@ def build_app():
     ]
     
     print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=SCRIPT_DIR, startupinfo=si, creationflags=subprocess.CREATE_NO_WINDOW)
+    with open(os.devnull, 'w') as devnull:
+        result = subprocess.run(cmd, cwd=SCRIPT_DIR, stdin=devnull, stdout=devnull, stderr=subprocess.STDOUT, startupinfo=si, creationflags=subprocess.CREATE_NO_WINDOW, env=env)
     
     if result.returncode != 0:
         print("Build failed!")

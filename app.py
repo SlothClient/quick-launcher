@@ -467,20 +467,26 @@ class QuickLauncherApp:
         si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         si.wShowWindow = subprocess.SW_HIDE
         
-        result = subprocess.run(
-            [sys.executable, build_py, "launcher"],
-            cwd=script_dir,
-            capture_output=True,
-            text=True,
-            startupinfo=si,
-            creationflags=subprocess.CREATE_NO_WINDOW
-        )
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "0"
+        
+        with open(os.devnull, 'w') as devnull:
+            result = subprocess.run(
+                [sys.executable, build_py, "launcher"],
+                cwd=script_dir,
+                stdin=devnull,
+                stdout=devnull,
+                stderr=subprocess.STDOUT,
+                startupinfo=si,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                env=env
+            )
         
         if result.returncode == 0:
             messagebox.showinfo("Success", "Base launcher built successfully!")
             self.update_base_exe_status()
         else:
-            messagebox.showerror("Build Failed", result.stderr or result.stdout)
+            messagebox.showerror("Build Failed", "Build failed. Check build.py output.")
 
 
 def main():
