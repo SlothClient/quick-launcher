@@ -8,6 +8,10 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LAUNCHER_DIR = os.path.join(SCRIPT_DIR)
 BASE_EXE_NAME = "_ql_base.exe"
 APP_EXE_NAME = "QuickLauncher.exe"
+
+si = subprocess.STARTUPINFO()
+si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+si.wShowWindow = subprocess.SW_HIDE
 SETTINGS_FILE = "settings.json"
 
 def get_settings():
@@ -68,7 +72,7 @@ def build_launcher():
     ]
     
     print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=SCRIPT_DIR)
+    result = subprocess.run(cmd, cwd=SCRIPT_DIR, startupinfo=si, creationflags=subprocess.CREATE_NO_WINDOW)
     
     if result.returncode != 0:
         print("Build failed!")
@@ -123,7 +127,7 @@ def build_app():
     ]
     
     print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=SCRIPT_DIR)
+    result = subprocess.run(cmd, cwd=SCRIPT_DIR, startupinfo=si, creationflags=subprocess.CREATE_NO_WINDOW)
     
     if result.returncode != 0:
         print("Build failed!")

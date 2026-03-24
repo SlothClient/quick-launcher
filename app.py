@@ -453,6 +453,7 @@ class QuickLauncherApp:
     def build_base_launcher(self):
         import subprocess
         import sys
+        import subprocess
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
         build_py = os.path.join(script_dir, "build.py")
@@ -463,11 +464,17 @@ class QuickLauncherApp:
         
         messagebox.showinfo("Building", "Building base launcher, please wait...")
         
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        si.wShowWindow = subprocess.SW_HIDE
+        
         result = subprocess.run(
             [sys.executable, build_py, "launcher"],
             cwd=script_dir,
             capture_output=True,
-            text=True
+            text=True,
+            startupinfo=si,
+            creationflags=subprocess.CREATE_NO_WINDOW
         )
         
         if result.returncode == 0:
