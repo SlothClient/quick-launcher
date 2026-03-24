@@ -467,12 +467,16 @@ class QuickLauncherApp:
         si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         si.wShowWindow = subprocess.SW_HIDE
         
+        python_exe = sys.executable.replace('python.exe', 'pythonw.exe')
+        if not os.path.exists(python_exe):
+            python_exe = sys.executable
+        
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "0"
         
         with open(os.devnull, 'w') as devnull:
             result = subprocess.run(
-                [sys.executable, build_py, "launcher"],
+                [python_exe, build_py, "launcher"],
                 cwd=script_dir,
                 stdin=devnull,
                 stdout=devnull,

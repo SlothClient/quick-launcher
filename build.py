@@ -10,12 +10,17 @@ BASE_EXE_NAME = "_ql_base.exe"
 APP_EXE_NAME = "QuickLauncher.exe"
 SETTINGS_FILE = "settings.json"
 
+PYTHON_EXE = sys.executable.replace('python.exe', 'pythonw.exe')
+if not os.path.exists(PYTHON_EXE):
+    PYTHON_EXE = sys.executable
+
 si = subprocess.STARTUPINFO()
 si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 si.wShowWindow = subprocess.SW_HIDE
 
 env = os.environ.copy()
 env["PYTHONUNBUFFERED"] = "0"
+env["PYTHON_CLOSESTDIO"] = "1"
 
 def get_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -60,7 +65,7 @@ def build_launcher():
         os.remove(spec_file)
     
     cmd = [
-        sys.executable, "-m", "PyInstaller",
+        PYTHON_EXE, "-m", "PyInstaller",
         "--onefile",
         "--name", "_ql_base",
         "--distpath", temp_dist,
@@ -121,7 +126,7 @@ def build_app():
         os.remove(output_exe)
     
     cmd = [
-        sys.executable, "-m", "PyInstaller",
+        PYTHON_EXE, "-m", "PyInstaller",
         "--onefile",
         "--noconsole",
         "--name", "QuickLauncher",
