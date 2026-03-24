@@ -453,7 +453,6 @@ class QuickLauncherApp:
     def build_base_launcher(self):
         import subprocess
         import sys
-        import subprocess
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
         build_py = os.path.join(script_dir, "build.py")
