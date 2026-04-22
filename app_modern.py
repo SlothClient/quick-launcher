@@ -19,21 +19,21 @@ SETTINGS_FILE = "settings.json"
 class DesignSystem:
     """工业科技风格设计系统"""
 
-    # 颜色方案 - 深色工业科技风
+    # 颜色方案 - 深色工业科技风（调整版）
     COLORS = {
         'bg_dark': '#0A0E1A',           # 深空蓝背景
         'bg_card': '#1A1F2E',           # 卡片背景
         'bg_sidebar': '#0F1419',        # 侧边栏背景
-        'accent_blue': '#00D4FF',       # 青色强调色
-        'accent_green': '#00FF88',      # 绿色强调色
-        'accent_orange': '#FF6B35',     # 橙色警告
-        'text_primary': '#E8F4FD',      # 主要文本
-        'text_secondary': '#8A9BA8',    # 次要文本
-        'border': '#2A3441',            # 边框
+        'accent_blue': '#3B82F6',       # 柔和蓝色强调色（原为#00D4FF）
+        'accent_green': '#10B981',      # 柔和绿色强调色（原为#00FF88）
+        'accent_orange': '#F97316',     # 柔和橙色警告（原为#FF6B35）
+        'text_primary': '#F1F5F9',      # 主要文本（提高亮度）
+        'text_secondary': '#94A3B8',    # 次要文本（提高亮度）
+        'border': '#334155',            # 边框（稍微提亮）
         'hover': '#2563EB',             # 悬停效果
-        'success': '#10B981',           # 成功状态
-        'warning': '#F59E0B',           # 警告状态
-        'error': '#EF4444'              # 错误状态
+        'success': '#059669',           # 成功状态（柔和绿色）
+        'warning': '#D97706',           # 警告状态（柔和橙色）
+        'error': '#DC2626'              # 错误状态（柔和红色）
     }
 
     # 字体系统
