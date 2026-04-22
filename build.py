@@ -116,7 +116,17 @@ def build_app():
     temp_dist = os.path.join(SCRIPT_DIR, "_build_temp")
     build_dir = os.path.join(SCRIPT_DIR, "build")
     spec_file = os.path.join(SCRIPT_DIR, "QuickLauncher.spec")
-    
+
+    # 强制关闭正在运行的QuickLauncher进程
+    try:
+        subprocess.run(['taskkill', '/F', '/IM', 'QuickLauncher.exe'],
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # 等待进程完全关闭
+        import time
+        time.sleep(1)
+    except:
+        pass
+
     if os.path.exists(temp_dist):
         shutil.rmtree(temp_dist)
     if os.path.exists(build_dir):
@@ -124,7 +134,11 @@ def build_app():
     if os.path.exists(spec_file):
         os.remove(spec_file)
     if os.path.exists(output_exe):
-        os.remove(output_exe)
+        try:
+            os.remove(output_exe)
+        except PermissionError:
+            print(f"Warning: Could not remove {output_exe} (file in use)")
+            print("The existing file will be overwritten when the build completes.")
     
     cmd = [
         PYTHON_EXE, "-m", "PyInstaller",
@@ -149,7 +163,26 @@ def build_app():
     
     src_exe = os.path.join(temp_dist, "QuickLauncher.exe")
     if os.path.exists(src_exe):
-        shutil.move(src_exe, output_exe)
+        try:
+            shutil.move(src_exe, output_exe)
+        except (PermissionError, FileExistsError):
+            # 再次尝试强制关闭进程
+            try:
+                subprocess.run(['taskkill', '/F', '/IM', 'QuickLauncher.exe'],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                import time
+                time.sleep(2)
+                # 重试移动
+                if os.path.exists(output_exe):
+                    os.remove(output_exe)
+                shutil.move(src_exe, output_exe)
+            except Exception as e:
+                # 如果还是失败，保存到临时位置
+                temp_output = output_exe + ".new"
+                shutil.copy2(src_exe, temp_output)
+                print(f"Warning: Could not replace {output_exe} (file in use)")
+                print(f"New version saved as {temp_output}")
+                print("Please replace the old file manually when the application is not running.")
     
     shutil.rmtree(temp_dist, ignore_errors=True)
     shutil.rmtree(build_dir, ignore_errors=True)
