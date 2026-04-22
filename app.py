@@ -92,14 +92,21 @@ def get_launchers_in_dir():
     settings = get_settings()
     launcher_dir = settings.get("launcher_dir", DEFAULT_DIR)
     launchers = []
-    
+
     if not os.path.exists(launcher_dir):
         return launchers
-    
+
     for filename in os.listdir(launcher_dir):
         if filename.endswith(".exe") and filename != BASE_EXE_NAME:
             exe_path = os.path.join(launcher_dir, filename)
             target = get_target_from_exe(exe_path)
+
+            # 提供更有用的显示信息
+            if target is None:
+                target = "<Legacy launcher - target unknown>"
+            elif not target:
+                target = "<Invalid configuration>"
+
             launchers.append({
                 "name": filename[:-4],
                 "exe_path": exe_path,
@@ -107,17 +114,64 @@ def get_launchers_in_dir():
             })
     return launchers
 
+def get_launcher_info(exe_path):
+    """Get detailed information about a launcher file"""
+    try:
+        with open(exe_path, 'rb') as f:
+            data = f.read()
+
+        idx = data.rfind(MARKER)
+        if idx == -1:
+            return {"status": "invalid", "reason": "No configuration marker found"}
+
+        config_bytes = data[idx + len(MARKER):]
+        config_str = config_bytes.decode('utf-8').strip('\x00')
+
+        if not config_str:
+            return {"status": "invalid", "reason": "Empty configuration data"}
+
+        config = json.loads(config_str)
+        target = config.get("target", "")
+
+        if not target:
+            return {"status": "invalid", "reason": "Empty target path"}
+
+        return {
+            "status": "valid",
+            "target": target,
+            "config_size": len(config_str),
+            "file_size": len(data)
+        }
+
+    except json.JSONDecodeError as e:
+        return {"status": "invalid", "reason": f"Invalid JSON: {str(e)}"}
+    except UnicodeDecodeError as e:
+        return {"status": "invalid", "reason": f"Encoding error: {str(e)}"}
+    except Exception as e:
+        return {"status": "invalid", "reason": f"Error: {str(e)}"}
+
 def get_target_from_exe(exe_path):
     try:
         with open(exe_path, 'rb') as f:
             data = f.read()
         idx = data.rfind(MARKER)
         if idx == -1:
+            # No configuration marker found - might be an old launcher or not created by this tool
             return None
         config_bytes = data[idx + len(MARKER):]
-        config = json.loads(config_bytes.decode('utf-8').strip('\x00'))
+        config_str = config_bytes.decode('utf-8').strip('\x00')
+        if not config_str:
+            return None
+        config = json.loads(config_str)
         return config.get("target", "")
-    except:
+    except json.JSONDecodeError as e:
+        # Config data is corrupted or invalid JSON
+        return None
+    except UnicodeDecodeError as e:
+        # Config data has encoding issues
+        return None
+    except Exception as e:
+        # Other unexpected errors
         return None
 
 def create_launcher(command_name, target_path):
@@ -380,11 +434,11 @@ class QuickLauncherApp:
     def refresh_launcher_list(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
-        
+
         launchers = get_launchers_in_dir()
         for launcher in launchers:
             self.tree.insert('', 'end', values=(launcher['name'], launcher['target']))
-        
+
         self.update_base_exe_status()
     
     def delete_selected(self):
@@ -413,13 +467,26 @@ class QuickLauncherApp:
         if not selection:
             messagebox.showwarning("No Selection", "Please select a launcher")
             return
-        
+
         values = self.tree.item(selection[0])['values']
         target = values[1]
+
+        # 检查是否为遗留启动器或无效配置
+        if target.startswith('<') and target.endswith('>'):
+            messagebox.showinfo("Legacy Launcher",
+                "This is a legacy launcher with unknown target.\n"
+                "The target program cannot be determined from the launcher file.")
+            return
+
         if target:
             folder = os.path.dirname(target)
             if os.path.exists(folder):
                 os.startfile(folder)
+            else:
+                messagebox.showwarning("Folder Not Found",
+                    f"Target folder does not exist:\n{folder}")
+        else:
+            messagebox.showwarning("No Target", "This launcher has no target configured.")
     
     def update_path_status(self):
         launcher_dir = self.settings.get("launcher_dir", DEFAULT_DIR)
