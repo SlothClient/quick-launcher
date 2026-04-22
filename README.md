@@ -1,3 +1,6 @@
+>vibe coding项目，我仅提供环境变量PATH和注册表相关知识与应用思路
+
+>因为用了planning-with-files这个skill，所以有三个计划相关md，不必理会
 # Quick Launcher - Windows 快速启动器
 
 一个现代化的 Windows 桌面应用程序，让您通过资源管理器地址栏快速启动任何程序。只需输入简短命令（如 `npd`），即可打开对应的程序，无需记忆完整路径。
