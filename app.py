@@ -7,23 +7,11 @@ from tkinter import ttk, messagebox, filedialog
 import winreg
 from ctypes import windll, c_long, byref, wintypes
 
+from utils import get_settings, save_settings, ensure_launcher_dir, DEFAULT_DIR
+
 MARKER = b"__QUICK_LAUNCHER_CONFIG__"
-DEFAULT_DIR = r"D:\.quick-launchers"
 BASE_EXE_NAME = "_ql_base.exe"
 SETTINGS_FILE = "settings.json"
-
-def get_settings():
-    if os.path.exists(SETTINGS_FILE):
-        try:
-            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            pass
-    return {"launcher_dir": DEFAULT_DIR}
-
-def save_settings(settings):
-    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(settings, f, indent=2, ensure_ascii=False)
 
 def get_user_path():
     try:
@@ -54,13 +42,6 @@ def refresh_environment():
         SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, "Environment", 0x0002, 5000, byref(c_long()))
     except:
         pass
-
-def ensure_launcher_dir():
-    settings = get_settings()
-    launcher_dir = settings.get("launcher_dir", DEFAULT_DIR)
-    if not os.path.exists(launcher_dir):
-        os.makedirs(launcher_dir)
-    return launcher_dir
 
 def get_base_exe_path():
     settings = get_settings()
@@ -114,65 +95,101 @@ def get_launchers_in_dir():
             })
     return launchers
 
-def get_launcher_info(exe_path):
-    """Get detailed information about a launcher file"""
+def _extract_config_from_exe(exe_path):
+    """Extract and parse configuration from an executable file.
+
+    Returns:
+        dict: Contains 'success' (bool), 'config' (dict or None), 'error' (str or None),
+              'config_size' (int), 'file_size' (int)
+    """
     try:
         with open(exe_path, 'rb') as f:
             data = f.read()
 
         idx = data.rfind(MARKER)
         if idx == -1:
-            return {"status": "invalid", "reason": "No configuration marker found"}
+            return {
+                "success": False,
+                "config": None,
+                "error": "No configuration marker found",
+                "config_size": 0,
+                "file_size": len(data)
+            }
 
         config_bytes = data[idx + len(MARKER):]
         config_str = config_bytes.decode('utf-8').strip('\x00')
 
         if not config_str:
-            return {"status": "invalid", "reason": "Empty configuration data"}
+            return {
+                "success": False,
+                "config": None,
+                "error": "Empty configuration data",
+                "config_size": 0,
+                "file_size": len(data)
+            }
 
         config = json.loads(config_str)
-        target = config.get("target", "")
-
-        if not target:
-            return {"status": "invalid", "reason": "Empty target path"}
-
         return {
-            "status": "valid",
-            "target": target,
+            "success": True,
+            "config": config,
+            "error": None,
             "config_size": len(config_str),
             "file_size": len(data)
         }
 
     except json.JSONDecodeError as e:
-        return {"status": "invalid", "reason": f"Invalid JSON: {str(e)}"}
+        return {
+            "success": False,
+            "config": None,
+            "error": f"Invalid JSON: {str(e)}",
+            "config_size": 0,
+            "file_size": len(data) if 'data' in locals() else 0
+        }
     except UnicodeDecodeError as e:
-        return {"status": "invalid", "reason": f"Encoding error: {str(e)}"}
+        return {
+            "success": False,
+            "config": None,
+            "error": f"Encoding error: {str(e)}",
+            "config_size": 0,
+            "file_size": len(data) if 'data' in locals() else 0
+        }
     except Exception as e:
-        return {"status": "invalid", "reason": f"Error: {str(e)}"}
+        return {
+            "success": False,
+            "config": None,
+            "error": f"Error: {str(e)}",
+            "config_size": 0,
+            "file_size": len(data) if 'data' in locals() else 0
+        }
+
+
+def get_launcher_info(exe_path):
+    """Get detailed information about a launcher file"""
+    result = _extract_config_from_exe(exe_path)
+
+    if not result["success"]:
+        return {"status": "invalid", "reason": result["error"]}
+
+    config = result["config"]
+    target = config.get("target", "")
+
+    if not target:
+        return {"status": "invalid", "reason": "Empty target path"}
+
+    return {
+        "status": "valid",
+        "target": target,
+        "config_size": result["config_size"],
+        "file_size": result["file_size"]
+    }
+
 
 def get_target_from_exe(exe_path):
-    try:
-        with open(exe_path, 'rb') as f:
-            data = f.read()
-        idx = data.rfind(MARKER)
-        if idx == -1:
-            # No configuration marker found - might be an old launcher or not created by this tool
-            return None
-        config_bytes = data[idx + len(MARKER):]
-        config_str = config_bytes.decode('utf-8').strip('\x00')
-        if not config_str:
-            return None
-        config = json.loads(config_str)
-        return config.get("target", "")
-    except json.JSONDecodeError as e:
-        # Config data is corrupted or invalid JSON
-        return None
-    except UnicodeDecodeError as e:
-        # Config data has encoding issues
-        return None
-    except Exception as e:
-        # Other unexpected errors
-        return None
+    """Extract target path from launcher executable (backward compatibility)"""
+    info = get_launcher_info(exe_path)
+    if info["status"] == "valid":
+        return info["target"]
+    return None
 
 def create_launcher(command_name, target_path):
     settings = get_settings()
@@ -395,22 +412,22 @@ class QuickLauncherApp:
     def create_launcher_action(self):
         command_name = self.cmd_name_var.get().strip()
         target_path = self.target_var.get().strip()
-        
+
+        # Input validation
         if not command_name:
             self.status_var.set("Error: Command name is required")
-            self.status_var.set("Error: Command name is required")
             return
-        
+
         if not target_path:
             self.status_var.set("Error: Target program is required")
             return
-        
+
         if not command_name.replace('_', '').replace('-', '').isalnum():
             self.status_var.set("Error: Command name must be alphanumeric (underscores and hyphens allowed)")
             return
-        
+
+        # Check for conflicts
         conflicts = scan_all_path_for_conflict(command_name)
-        
         if conflicts:
             conflict_list = "\n".join(conflicts)
             response = messagebox.askyesno(
@@ -420,9 +437,10 @@ class QuickLauncherApp:
             if not response:
                 self.status_var.set("Cancelled: Command name conflicts with existing PATH entries")
                 return
-        
+
+        # Create launcher
         success, message = create_launcher(command_name, target_path)
-        
+
         if success:
             self.status_var.set(f"Success: Created '{command_name}' -> {target_path}")
             self.cmd_name_var.set("")
@@ -490,9 +508,8 @@ class QuickLauncherApp:
     
     def update_path_status(self):
         launcher_dir = self.settings.get("launcher_dir", DEFAULT_DIR)
-        
+
         if is_dir_in_path(launcher_dir):
-            self.path_status_var.set("Added to PATH")
             self.path_status_var.set("In PATH (OK)")
             self.path_dir_status_var.set("")
         else:
