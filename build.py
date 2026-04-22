@@ -67,6 +67,7 @@ def build_launcher():
     cmd = [
         PYTHON_EXE, "-m", "PyInstaller",
         "--onefile",
+        "--noconsole",
         "--name", "_ql_base",
         "--distpath", temp_dist,
         "--workpath", build_dir,

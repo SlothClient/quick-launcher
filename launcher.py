@@ -26,25 +26,18 @@ def get_embedded_config():
 
 def main():
     config = get_embedded_config()
-    
+
     if config is None:
-        print("Error: No target configuration found.", file=sys.stderr)
-        print("This launcher was not properly configured.", file=sys.stderr)
-        input("Press Enter to exit...")
         sys.exit(1)
-    
+
     target = config.get("target", "")
-    
+
     if not target:
-        print("Error: Target path is empty.", file=sys.stderr)
-        input("Press Enter to exit...")
         sys.exit(1)
-    
+
     if not os.path.exists(target):
-        print(f"Error: Target not found: {target}", file=sys.stderr)
-        input("Press Enter to exit...")
         sys.exit(1)
-    
+
     args = sys.argv[1:] if len(sys.argv) > 1 else []
     subprocess.Popen([target] + args)
     sys.exit(0)
