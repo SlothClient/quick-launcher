@@ -33,7 +33,35 @@ launcher.py → PyInstaller → _ql_base.exe
 - PATH refresh via: SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, "Environment")
 - User PATH stored in: HKEY_CURRENT_USER\Environment (not system-wide)
 
+## Modernization Findings
+
+### Console Window Fix
+- PyInstaller --noconsole is REQUIRED for both base launcher AND app
+- Removing print()/input() from launcher.py prevents console allocation
+- subprocess.Popen should use CREATE_NO_WINDOW flag
+
+### Code Quality Improvements
+- utils.py module reduces code duplication by ~200 lines
+- _extract_config_from_exe() unified config extraction across app.py and launcher.py
+- get_hidden_startupinfo() and get_subprocess_env() standardize subprocess calls
+- kill_process() utility handles force-kill for updating running executables
+
+### UI Design Decisions
+| Decision | Rationale |
+|----------|-----------|
+| Dark theme (#0A0E1A) | Reduces eye strain, professional appearance |
+| Blue accent (#3B82F6) | Softer than cyan, better text contrast |
+| Status indicators | Visual feedback for PATH and base launcher status |
+| Custom ttk styles | Consistent look across all widgets |
+
+### Windows Integration
+- Start Menu shortcuts required for Win+S search
+- PowerShell + WScript.Shell.CreateShortcut is reliable method
+- Shortcuts should point to working directory for relative paths
+- Windows search index may need time to recognize new shortcuts
+
 ## Resources
 - PyInstaller docs: https://pyinstaller.org/
 - winreg Python docs: https://docs.python.org/3/library/winreg.html
 - Windows API: SendMessageTimeout with WM_SETTINGCHANGE
+- ttk styling: https://docs.python.org/3/library/tkinter.ttk.html
